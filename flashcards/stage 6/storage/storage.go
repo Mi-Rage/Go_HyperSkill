@@ -26,6 +26,10 @@ func (s *Storage) ExecuteCommand(command string, ui *Ui) {
 		s.askUser(ui)
 	case "log":
 		s.logData(ui)
+	case "hardest card":
+		s.getHardestCard(ui)
+	case "reset stats":
+		s.setResetErrors(ui)
 	}
 }
 
@@ -50,6 +54,7 @@ func (s *Storage) createCard(ui *Ui) {
 	card = Card{
 		Term:       term,
 		Definition: definition,
+		Error:      0,
 	}
 	s.addCard(&card)
 	ui.LogAndPrint(fmt.Sprintf("The pair(\"%s\":\"%s\") has been added.", term, definition))
@@ -153,6 +158,7 @@ func (s *Storage) askUser(ui *Ui) {
 				ui.LogAndPrint(fmt.Sprintf("Wrong. The right answer is \"%s\", "+
 					"but your definition is correct for \"%s\"", rightAnswer, foundTerm))
 			}
+			s.Data[i%len(s.Data)].Error += 1
 		}
 	}
 }
@@ -182,4 +188,45 @@ func (s *Storage) logData(ui *Ui) {
 	fileManager := FileManager{FileName: fileName}
 	fileManager.ExportLogs(ui.LogStorage)
 	ui.LogAndPrint("The log has been saved.")
+}
+
+func (s *Storage) getHardestCard(ui *Ui) {
+	var hardestCards []string
+	var maxError = 0
+
+	for _, datum := range s.Data {
+		if maxError < datum.Error {
+			maxError = datum.Error
+		}
+	}
+
+	if maxError > 0 {
+		for _, datum := range s.Data {
+			if datum.Error == maxError {
+				hardestCards = append(hardestCards, datum.Term)
+			}
+		}
+	}
+
+	if len(hardestCards) == 0 {
+		ui.LogAndPrint("There are no cards with errors.")
+	} else if len(hardestCards) == 1 {
+		ui.LogAndPrint(fmt.Sprintf("The hardest card is \"%s\". "+
+			"You have %d errors answering it", hardestCards[0], maxError))
+	} else {
+		var ans = "The hardest card is "
+		for _, card := range hardestCards {
+			ans += "\"" + card + "\", "
+		}
+		ans = ans[:len(ans)-2] + fmt.Sprintf(". You have %d errors answering them.", maxError)
+		ui.LogAndPrint(ans)
+	}
+
+}
+
+func (s *Storage) setResetErrors(ui *Ui) {
+	for i, _ := range s.Data {
+		s.Data[i].Error = 0
+	}
+	ui.LogAndPrint("Card statistics have been reset.")
 }

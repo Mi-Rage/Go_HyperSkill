@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	. "task/card"
 )
@@ -30,7 +31,7 @@ func (m *FileManager) ExportData(data []Card) int {
 		log.Fatal(err)
 	}
 	for _, datum := range data {
-		_, err := fmt.Fprintln(file, datum.Term+":"+datum.Definition) // append the additional line
+		_, err := fmt.Fprintln(file, datum.Term+":"+datum.Definition+":"+strconv.Itoa(datum.Error)) // append the additional line
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -51,10 +52,12 @@ func (m *FileManager) ImportData() []Card {
 
 	for scanner.Scan() {
 		cardItem := strings.Split(scanner.Text(), ":")
+		cardError, _ := strconv.Atoi(cardItem[2])
 
 		loadedCards = append(loadedCards, Card{
 			Term:       cardItem[0],
 			Definition: cardItem[1],
+			Error:      cardError,
 		})
 	}
 
@@ -70,7 +73,7 @@ func (m *FileManager) ExportLogs(storage []string) {
 		log.Fatal(err)
 	}
 	for _, datum := range storage {
-		_, err := fmt.Fprintln(file, datum) // append the additional line
+		_, err := fmt.Fprintln(file, datum)
 		if err != nil {
 			log.Fatal(err)
 		}
